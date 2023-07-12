@@ -1,0 +1,143 @@
+import './style.css'
+import * as THREE from "three"
+// import {FilesetResolver, HandLandmarker} from "@mediapipe/tasks-vision"
+import vertexShader from "./shaders/vertex.glsl"
+import fragmentShader from "./shaders/fragment.glsl"
+import atmosphereFragmentShader from "./shaders/atmosphereFragment.glsl"
+import atmosphereVertexShader from "./shaders/atmosphereVertex.glsl"
+
+
+const innerWidth = window.innerWidth;
+const innerHeight = window.innerHeight;
+// const vision = await FilesetResolver.forVisionTasks("./wasm");
+const mouse = {x: 0.0, y: 0.0}
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
+const renderer = new THREE.WebGLRenderer({antialias: true})
+renderer.setSize(innerWidth, innerHeight)
+renderer.setPixelRatio(window.devicePixelRatio)
+document.body.appendChild(renderer.domElement)
+
+const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), 
+                              new THREE.ShaderMaterial({
+                                vertexShader,
+                                fragmentShader,
+                                uniforms: {
+                                  globeTexture: {
+                                    value: new THREE.TextureLoader().load("./img/globe2.jpeg")
+                                  }
+                                }
+                              }))
+scene.add(sphere)
+const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), 
+                              new THREE.ShaderMaterial({
+                                vertexShader: atmosphereVertexShader,
+                                fragmentShader: atmosphereFragmentShader,
+                                blending: THREE.AdditiveBlending,
+                                side: THREE.BackSide
+                              }))
+
+atmosphere.scale.set(1.1, 1.1, 1.1)
+scene.add(atmosphere)
+
+
+// const handLandmarker = await HandLandmarker.createFromOptions(
+//     vision,
+//     {
+//       baseOptions: {
+//         modelAssetPath: "hand_landmarker.task",
+//         delegate: "GPU"
+//       },
+//       numHands: 2,
+//       min_hand_detection_confidence: 0.9,
+//       min_hand_presence_confidence: 0.9,
+//       min_tracking_confidence: 0.9
+// });
+
+// await handLandmarker.setOptions({ runningMode: "video" });
+
+// function processResults(results) {
+//   if (results.landmarks) {
+//     const numHands = results.landmarks.length;
+//     for (const landmarks of results.landmarks) {
+//       console.log(landmarks);
+//     }
+//   }
+// }
+
+
+camera.position.z = 8
+
+// if (navigator.mediaDevices === undefined) {
+//   navigator.mediaDevices = {};
+// }
+
+// // Some browsers partially implement mediaDevices. We can't just assign an object
+// // with getUserMedia as it would overwrite existing properties.
+// // Here, we will just add the getUserMedia property if it's missing.
+// if (navigator.mediaDevices.getUserMedia === undefined) {
+//   navigator.mediaDevices.getUserMedia = function(constraints) {
+
+//     // First get ahold of the legacy getUserMedia, if present
+//     var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+//     // Some browsers just don't implement it - return a rejected promise with an error
+//     // to keep a consistent interface
+//     if (!getUserMedia) {
+//       return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+//     }
+
+//     // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
+//     return new Promise(function(resolve, reject) {
+//       getUserMedia.call(navigator, constraints, resolve, reject);
+//     });
+//   }
+// }
+// // Check if webcam access is supported.
+// const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
+
+// if (hasGetUserMedia()) {
+//   // Activate the webcam stream.
+//   navigator.mediaDevices.getUserMedia({audio: false, video: true}).then((stream) => {
+//     video.srcObject = stream;
+//     video.addEventListener("loadeddata", animate);
+//   });
+// } else {
+//   console.warn("getUserMedia() is not supported by your browser");
+// }
+
+
+let lastVideoTime = -1;
+let lastTime = 0.0
+function animate() {
+  // const video = document.getElementById("video");
+  // if (video.currentTime !== lastVideoTime) {
+  //   const detections = handLandmarker.detectForVideo(video);
+  //   processResults(detections);
+  //   lastVideoTime = video.currentTime;
+  // }
+  renderer.render(scene, camera)
+  requestAnimationFrame(animate)
+}
+animate()
+let clicked_mouse_down = false
+addEventListener("mousedown", () => {
+  clicked_mouse_down = true
+})
+
+addEventListener("mouseup", (event) => {
+  clicked_mouse_down = false
+})
+
+let lastMove = [innerWidth / 2, innerHeight / 2];
+addEventListener("mousemove", (event) => {
+  if(clicked_mouse_down){
+    const moveX = ( event.clientX - lastMove[0]);
+    const moveY = ( event.clientY - lastMove[1]);
+    sphere.rotation.y += ( moveX * .005);
+    sphere.rotation.x += ( moveY * .005);
+    sphere.updateMatrix()
+  }
+  lastMove[0] = event.clientX;
+  lastMove[1] = event.clientY;
+})

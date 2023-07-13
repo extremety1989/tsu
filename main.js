@@ -195,14 +195,16 @@ function processResults(results) {
           both_pinch_occurs = 0
         }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
           if(both_pinch_occurs > 0){
-            console.log("right pinch");
+            console.log("both right pinch");
             if(clicked_mouse_down === false){
               simulateMouseEvent(indexTip1.x, indexTip1.y)
             }
             simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
             both_pinch_occurs = 0
-          }else{
+          }
+          else{
             if(clicked_mouse_down === true){
+              both_pinch_occurs = 0
               simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
             }
           }
@@ -210,8 +212,7 @@ function processResults(results) {
           both_pinch_occurs++
         }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
           if(both_pinch_occurs > 0){
-            console.log("left pinch");
-            if(both_pinch_occurs > 0){}
+            console.log("both left pinch");
             both_pinch_occurs = 0
           }
           both_pinch_occurs++
@@ -228,25 +229,24 @@ function processResults(results) {
           both_pinch_occurs = 0
         }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
           
-
           if(both_pinch_occurs > 0){
-            console.log("left pinch");
-
+            console.log("both left pinch");
             both_pinch_occurs = 0
           }
           both_pinch_occurs++
-
         }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
           
           if(both_pinch_occurs > 0){
-            console.log("right pinch");
+            console.log("both right pinch");
             if(clicked_mouse_down === false){
               simulateMouseEvent(indexTip1.x, indexTip1.y)
             }
             simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
             both_pinch_occurs = 0
-          }else{
+          }
+          else{
             if(clicked_mouse_down === true){
+              both_pinch_occurs = 0
               simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
             }
           }
@@ -267,13 +267,12 @@ function processResults(results) {
         if(pinch_occurs > 0){
             //here Right is left hand...
           if(handednesses[0][0].categoryName === "Right"){
-              //i do not not know how to draw
-              // cylinder.traverse(function(child) {
-              //   child.visible = true;
-              // });
-              //drawCircle(indexTip.x, indexTip.y, 10, "red", true)
-              pinch_occurs = 0
-              console.log("left pinch");
+            
+            if(clicked_mouse_down === false){
+              simulateMouseEvent(indexTip.x, indexTip.y)
+            }
+            console.log("left pinch");
+            simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
           }else{
             if(clicked_mouse_down === false){
               simulateMouseEvent(indexTip.x, indexTip.y)

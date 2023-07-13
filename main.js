@@ -1,27 +1,29 @@
 import './style.css'
 import * as THREE from "three"
-// import {FilesetResolver, HandLandmarker} from "@mediapipe/tasks-vision"
-import vertexShader from "./shaders/vertex.glsl"
-import fragmentShader from "./shaders/fragment.glsl"
+import {FilesetResolver, HandLandmarker} from "@mediapipe/tasks-vision"
+import sphereVertexShader from "./shaders/sphereVertex.glsl"
+import sphereFragmentShader from "./shaders/sphereFragment.glsl"
 import atmosphereFragmentShader from "./shaders/atmosphereFragment.glsl"
 import atmosphereVertexShader from "./shaders/atmosphereVertex.glsl"
 
 
 const innerWidth = window.innerWidth;
 const innerHeight = window.innerHeight;
-// const vision = await FilesetResolver.forVisionTasks("./wasm");
-const mouse = {x: 0.0, y: 0.0}
+const video = document.getElementById("video");
+
 const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.07, 1000)
+camera.position.z = 8
 const renderer = new THREE.WebGLRenderer({antialias: true})
 renderer.setSize(innerWidth, innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
 document.body.appendChild(renderer.domElement)
-
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.1;
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), 
                               new THREE.ShaderMaterial({
-                                vertexShader,
-                                fragmentShader,
+                                vertexShader: sphereVertexShader,
+                                fragmentShader: sphereFragmentShader,
                                 uniforms: {
                                   globeTexture: {
                                     value: new THREE.TextureLoader().load("./img/globe2.jpeg")
@@ -40,89 +42,290 @@ const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50),
 atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
 
+const cylinderGeometry = new THREE.CylinderGeometry( 0.05, 0.05, 0.5 );
+const cylinderMaterial = new THREE.MeshPhongMaterial( { color: 'rgb(0,0,255)'} );
+const cylinder = new THREE.Mesh( cylinderGeometry, cylinderMaterial );
+cylinder.position.z = 7;
+cylinder.rotation.x = 360
+scene.add( cylinder );
 
-// const handLandmarker = await HandLandmarker.createFromOptions(
-//     vision,
-//     {
-//       baseOptions: {
-//         modelAssetPath: "hand_landmarker.task",
-//         delegate: "GPU"
-//       },
-//       numHands: 2,
-//       min_hand_detection_confidence: 0.9,
-//       min_hand_presence_confidence: 0.9,
-//       min_tracking_confidence: 0.9
-// });
+if (navigator.mediaDevices === undefined) {
+  navigator.mediaDevices = {};
+}
 
-// await handLandmarker.setOptions({ runningMode: "video" });
+// Some browsers partially implement mediaDevices. We can't just assign an object
+// with getUserMedia as it would overwrite existing properties.
+// Here, we will just add the getUserMedia property if it's missing.
+if (navigator.mediaDevices.getUserMedia === undefined) {
+  navigator.mediaDevices.getUserMedia = function(constraints) {
 
-// function processResults(results) {
-//   if (results.landmarks) {
-//     const numHands = results.landmarks.length;
-//     for (const landmarks of results.landmarks) {
-//       console.log(landmarks);
-//     }
-//   }
-// }
+    // First get ahold of the legacy getUserMedia, if present
+    var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+    // Some browsers just don't implement it - return a rejected promise with an error
+    // to keep a consistent interface
+    if (!getUserMedia) {
+      return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+    }
+
+    // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
+    return new Promise(function(resolve, reject) {
+      getUserMedia.call(navigator, constraints, resolve, reject);
+    });
+  }
+}
 
 
-camera.position.z = 8
 
-// if (navigator.mediaDevices === undefined) {
-//   navigator.mediaDevices = {};
-// }
+let handLandmarker = undefined;
 
-// // Some browsers partially implement mediaDevices. We can't just assign an object
-// // with getUserMedia as it would overwrite existing properties.
-// // Here, we will just add the getUserMedia property if it's missing.
-// if (navigator.mediaDevices.getUserMedia === undefined) {
-//   navigator.mediaDevices.getUserMedia = function(constraints) {
+const createHandLandmarker = async () => {
+    const vision = await FilesetResolver.forVisionTasks("./wasm");
 
-//     // First get ahold of the legacy getUserMedia, if present
-//     var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: `./hand_landmarker.task`,
+        delegate: "GPU"
+      },
+      runningMode: "CAMERA",
+      numHands: 2,
+      min_hand_detection_confidence: 0.9,
+      min_hand_presence_confidence: 0.9,
+      min_tracking_confidence: 0.9
+    });
+    if (navigator.mediaDevices === undefined) {
+      navigator.mediaDevices = {};
+    }
+    
+    // Some browsers partially implement mediaDevices. We can't just assign an object
+    // with getUserMedia as it would overwrite existing properties.
+    // Here, we will just add the getUserMedia property if it's missing.
+    if (navigator.mediaDevices.getUserMedia === undefined) {
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+    
+        // First get ahold of the legacy getUserMedia, if present
+        var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    
+        // Some browsers just don't implement it - return a rejected promise with an error
+        // to keep a consistent interface
+        if (!getUserMedia) {
+          return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+        }
+    
+        // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
+        return new Promise(function(resolve, reject) {
+          getUserMedia.call(navigator, constraints, resolve, reject);
+        });
+      }
+    }
+    // Check if webcam access is supported.
+    const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
 
-//     // Some browsers just don't implement it - return a rejected promise with an error
-//     // to keep a consistent interface
-//     if (!getUserMedia) {
-//       return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
-//     }
+    if (hasGetUserMedia()) {
+      enableCam()
+    } else {
+      alert("getUserMedia() is not supported by your browser");
+    }
+};
 
-//     // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
-//     return new Promise(function(resolve, reject) {
-//       getUserMedia.call(navigator, constraints, resolve, reject);
-//     });
-//   }
-// }
-// // Check if webcam access is supported.
-// const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
+createHandLandmarker();
 
-// if (hasGetUserMedia()) {
-//   // Activate the webcam stream.
-//   navigator.mediaDevices.getUserMedia({audio: false, video: true}).then((stream) => {
-//     video.srcObject = stream;
-//     video.addEventListener("loadeddata", animate);
-//   });
-// } else {
-//   console.warn("getUserMedia() is not supported by your browser");
-// }
+function enableCam() {
+  navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      facingMode: 'user'
+    },
+  }).then(async (stream) => {
+    await handLandmarker.setOptions({ runningMode: "VIDEO" });
+    video.srcObject = stream;
+    video.addEventListener("loadeddata", animate);
+  }).catch((exp)=>{
+    alert("You need webcamera!\nWhen you get it, please refresh the page!")
+  })
+}
 
+function calculateDistance(point1, point2) {
+  const deltaX = point2.x - point1.x;
+  const deltaY = point2.y - point1.y;
+  const deltaZ = point2.z - point1.z;
+  const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2 + deltaZ ** 2);
+  return distance;
+}
+
+const canvas = document.getElementsByName("canvas")
+async function drawCircle(x, y, size, color = 'red', fill= false, alpha = 1) {
+  if (canvas.getContext) {
+    let ctx = canvas.getContext('2d');
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    if(size <=0){
+      size=1;
+    }
+    ctx.arc(x, y, size, 0, 2 * Math.PI, false);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    if(fill){
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+  }
+  console.log("drawing");
+}
+
+let pinch_occurs = 0
+let both_pinch_occurs = 0
+function processResults(results) {
+  if (results.landmarks.length > 0) {
+    const numHands = results.landmarks.length;
+    const handednesses = results.handednesses
+    if(numHands === 2){
+      const thumbTip1 = results.landmarks[0][4];
+      const indexTip1 = results.landmarks[0][8];
+      
+      const thumbTip2 = results.landmarks[1][4];
+      const indexTip2 = results.landmarks[1][8];
+
+      if(handednesses[0][0].categoryName === "Left" && handednesses[1][0].categoryName === "Right")
+      {
+        if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+          //console.log("both pinch");
+          both_pinch_occurs = 0
+        }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
+          if(both_pinch_occurs > 0){
+            console.log("right pinch");
+            if(clicked_mouse_down === false){
+              simulateMouseEvent(indexTip1.x, indexTip1.y)
+            }
+            simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
+            both_pinch_occurs = 0
+          }else{
+            if(clicked_mouse_down === true){
+              simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
+            }
+          }
+  
+          both_pinch_occurs++
+        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+          if(both_pinch_occurs > 0){
+            console.log("left pinch");
+            if(both_pinch_occurs > 0){}
+            both_pinch_occurs = 0
+          }
+          both_pinch_occurs++
+        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
+          if(clicked_mouse_down === true){
+            simulateMouseEvent(Math.abs((indexTip1.x -indexTip2.x)/2), Math.abs((indexTip1.y -indexTip2.y)/2), "mouseup")
+          }
+        }
+
+      }else if(handednesses[0][0].categoryName === "Right" && handednesses[1][0].categoryName === "Left"){
+
+        if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+          //console.log("both pinch");
+          both_pinch_occurs = 0
+        }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
+          
+
+          if(both_pinch_occurs > 0){
+            console.log("left pinch");
+
+            both_pinch_occurs = 0
+          }
+          both_pinch_occurs++
+
+        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+          
+          if(both_pinch_occurs > 0){
+            console.log("right pinch");
+            if(clicked_mouse_down === false){
+              simulateMouseEvent(indexTip1.x, indexTip1.y)
+            }
+            simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
+            both_pinch_occurs = 0
+          }else{
+            if(clicked_mouse_down === true){
+              simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
+            }
+          }
+          both_pinch_occurs++
+        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
+          if(clicked_mouse_down === true){
+            simulateMouseEvent(Math.abs((indexTip1.x -indexTip2.x)/2), Math.abs((indexTip1.y -indexTip2.y)/2), "mouseup")
+          }
+        }
+
+      }
+
+
+    }else{
+      const thumbTip = results.landmarks[0][4];
+      const indexTip = results.landmarks[0][8];
+      if(calculateDistance(thumbTip, indexTip) < 0.07){
+        if(pinch_occurs > 0){
+            //here Right is left hand...
+          if(handednesses[0][0].categoryName === "Right"){
+              //i do not not know how to draw
+              // cylinder.traverse(function(child) {
+              //   child.visible = true;
+              // });
+              //drawCircle(indexTip.x, indexTip.y, 10, "red", true)
+              pinch_occurs = 0
+              console.log("left pinch");
+          }else{
+            if(clicked_mouse_down === false){
+              simulateMouseEvent(indexTip.x, indexTip.y)
+            }
+            console.log("right pinch");
+            simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
+          }
+          pinch_occurs = 0
+        }
+        pinch_occurs++
+      }else{
+        if(clicked_mouse_down === true){
+          simulateMouseEvent(indexTip.x, indexTip.y, "mouseup")
+        }
+      }
+    }
+  }
+}
 
 let lastVideoTime = -1;
-let lastTime = 0.0
 function animate() {
-  // const video = document.getElementById("video");
-  // if (video.currentTime !== lastVideoTime) {
-  //   const detections = handLandmarker.detectForVideo(video);
-  //   processResults(detections);
-  //   lastVideoTime = video.currentTime;
-  // }
+
+  const startTimeMs = performance.now();
+  if (video.currentTime !== lastVideoTime) {
+    const detections = handLandmarker.detectForVideo(video, startTimeMs);
+    processResults(detections);
+    lastVideoTime = video.currentTime;
+  }
+  // cylinder.position.x = lastMove.x
+  // cylinder.position.y = lastMove.y
   renderer.render(scene, camera)
   requestAnimationFrame(animate)
 }
-animate()
+
+function simulateMouseEvent(x, y, type="mousedown") {
+  // adapted from https://developer.mozilla.org/es/docs/Web/API/MouseEvent
+  let evt = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX: x * 1000,
+    clientY: y * 1000
+  });
+  let canceled = !renderer.domElement.dispatchEvent(evt);
+}
+
 let clicked_mouse_down = false
-addEventListener("mousedown", () => {
+
+addEventListener("mousedown", (event) => {
   clicked_mouse_down = true
+  lastMove[0] = event.clientX;
+  lastMove[1] = event.clientY;
 })
 
 addEventListener("mouseup", (event) => {
@@ -134,8 +337,8 @@ addEventListener("mousemove", (event) => {
   if(clicked_mouse_down){
     const moveX = ( event.clientX - lastMove[0]);
     const moveY = ( event.clientY - lastMove[1]);
-    sphere.rotation.y += ( moveX * .005);
-    sphere.rotation.x += ( moveY * .005);
+    sphere.rotation.y -= ( moveX * .0009);
+    sphere.rotation.x += ( moveY * .0009);
     sphere.updateMatrix()
   }
   lastMove[0] = event.clientX;

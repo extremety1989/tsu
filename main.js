@@ -188,77 +188,13 @@ function processResults(results) {
       const thumbTip2 = results.landmarks[1][4];
       const indexTip2 = results.landmarks[1][8];
 
-      if(handednesses[0][0].categoryName === "Left" && handednesses[1][0].categoryName === "Right")
-      {
-        if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
-          //console.log("both pinch");
-          both_pinch_occurs = 0
-        }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
-          if(both_pinch_occurs > 0){
-            console.log("both right pinch");
-            if(clicked_mouse_down === false){
-              simulateMouseEvent(indexTip1.x, indexTip1.y)
-            }
-            simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
-            both_pinch_occurs = 0
-          }
-          else{
-            if(clicked_mouse_down === true){
-              both_pinch_occurs = 0
-              simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
-            }
-          }
-  
-          both_pinch_occurs++
-        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
-          if(both_pinch_occurs > 0){
-            console.log("both left pinch");
-            both_pinch_occurs = 0
-          }
-          both_pinch_occurs++
-        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
-          if(clicked_mouse_down === true){
-            simulateMouseEvent(Math.abs((indexTip1.x -indexTip2.x)/2), Math.abs((indexTip1.y -indexTip2.y)/2), "mouseup")
-          }
-        }
-
-      }else if(handednesses[0][0].categoryName === "Right" && handednesses[1][0].categoryName === "Left"){
-
-        if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
-          //console.log("both pinch");
-          both_pinch_occurs = 0
-        }else if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
-          
-          if(both_pinch_occurs > 0){
-            console.log("both left pinch");
-            both_pinch_occurs = 0
-          }
-          both_pinch_occurs++
-        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
-          
-          if(both_pinch_occurs > 0){
-            console.log("both right pinch");
-            if(clicked_mouse_down === false){
-              simulateMouseEvent(indexTip1.x, indexTip1.y)
-            }
-            simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
-            both_pinch_occurs = 0
-          }
-          else{
-            if(clicked_mouse_down === true){
-              both_pinch_occurs = 0
-              simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
-            }
-          }
-          both_pinch_occurs++
-        }else if(calculateDistance(thumbTip1, indexTip1) > 0.07 && calculateDistance(thumbTip2, indexTip2) > 0.07){
-          if(clicked_mouse_down === true){
-            simulateMouseEvent(Math.abs((indexTip1.x -indexTip2.x)/2), Math.abs((indexTip1.y -indexTip2.y)/2), "mouseup")
-          }
-        }
-
+    if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+      if(both_pinch_occurs > 0){
+        console.log("both pinch");
+        both_pinch_occurs = 0
       }
-
+      both_pinch_occurs++
+    }
 
     }else{
       const thumbTip = results.landmarks[0][4];

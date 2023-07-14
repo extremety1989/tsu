@@ -1,8 +1,8 @@
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
-
-const port = 8002;
+const process = require("node:process")
+const port = 8000;
 const directoryName = './';
 
 const types = {
@@ -71,3 +71,7 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log(`Open this (http://localhost:${port}) in your browser!`);
 });
+
+process.on("SIGINT", () => {
+  process.exit()
+})

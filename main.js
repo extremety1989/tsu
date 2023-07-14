@@ -42,12 +42,7 @@ const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50),
 atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
 
-const cylinderGeometry = new THREE.CylinderGeometry( 0.05, 0.05, 0.5 );
-const cylinderMaterial = new THREE.MeshPhongMaterial( { color: 'rgb(0,0,255)'} );
-const cylinder = new THREE.Mesh( cylinderGeometry, cylinderMaterial );
-cylinder.position.z = 7;
-cylinder.rotation.x = 360
-scene.add( cylinder );
+
 
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
@@ -140,8 +135,8 @@ function enableCam() {
     await handLandmarker.setOptions({ runningMode: "VIDEO" });
     video.srcObject = stream;
     video.addEventListener("loadeddata", animate);
-  }).catch((exp)=>{
-    alert("You need webcamera!\nWhen you get it, please refresh the page!")
+  }).catch(()=>{
+    alert("You need webcamera!")
   })
 }
 
@@ -230,15 +225,12 @@ function processResults(results) {
 
 let lastVideoTime = -1;
 function animate() {
-
   const startTimeMs = performance.now();
   if (video.currentTime !== lastVideoTime) {
     const detections = handLandmarker.detectForVideo(video, startTimeMs);
     processResults(detections);
     lastVideoTime = video.currentTime;
   }
-  // cylinder.position.x = lastMove.x
-  // cylinder.position.y = lastMove.y
   renderer.render(scene, camera)
   requestAnimationFrame(animate)
 }

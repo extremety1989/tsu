@@ -1,5 +1,5 @@
 # tsu
-# project is build with pnpm + vitejs + vuejs(javascript)
+# project is built with pnpm + vitejs + vuejs(javascript)
 # you need to install pnpm (https://pnpm.io/fr/) and after
 # pnpm install
 # pnpm run dev

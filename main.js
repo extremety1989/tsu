@@ -43,7 +43,6 @@ atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
 
 
-
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
 }
@@ -148,66 +147,75 @@ function calculateDistance(point1, point2) {
   return distance;
 }
 
-const canvas = document.getElementsByName("canvas")
-async function drawCircle(x, y, size, color = 'red', fill= false, alpha = 1) {
-  if (canvas.getContext) {
-    let ctx = canvas.getContext('2d');
-    ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    if(size <=0){
-      size=1;
-    }
-    ctx.arc(x, y, size, 0, 2 * Math.PI, false);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = color;
-    if(fill){
-      ctx.fillStyle = color;
-      ctx.fill();
-    }
-    ctx.stroke();
-    ctx.globalAlpha = 1.0;
-  }
-  console.log("drawing");
-}
-
 let pinch_occurs = 0
 let both_pinch_occurs = 0
+let diff = 0
+let old_diff = 0
+let left_hand = false
+let right_hand = false
+let both_hands = false
 function processResults(results) {
   if (results.landmarks.length > 0) {
     const numHands = results.landmarks.length;
     const handednesses = results.handednesses
     if(numHands === 2){
+      left_hand = false
+      right_hand = false
+      both_hands = true
+      //right
       const thumbTip1 = results.landmarks[0][4];
       const indexTip1 = results.landmarks[0][8];
-      
+      //left
       const thumbTip2 = results.landmarks[1][4];
       const indexTip2 = results.landmarks[1][8];
-
+      document.getElementById("dot").style.display = "none"
     if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
       if(both_pinch_occurs > 0){
-        console.log("both pinch");
+        
+        diff = calculateDistance(thumbTip1, thumbTip2) || calculateDistance(indexTip2, indexTip1) 
+        console.log(diff);
+        if(diff > 0.14){
+          console.log("bigger");
+        
+        }else {
+          console.log("smaller");
+        }
+        old_diff = diff
         both_pinch_occurs = 0
       }
+    
       both_pinch_occurs++
     }
 
     }else{
+      left_hand = true
+      right_hand = true
+      both_hands = false
+
+
       const thumbTip = results.landmarks[0][4];
       const indexTip = results.landmarks[0][8];
+
+
       if(calculateDistance(thumbTip, indexTip) < 0.07){
         if(pinch_occurs > 0){
+          document.getElementById("dot").style.display = "block"
             //here Right is left hand...
           if(handednesses[0][0].categoryName === "Right"){
-            
+            left_hand = true
+            right_hand = false
             if(clicked_mouse_down === false){
               simulateMouseEvent(indexTip.x, indexTip.y)
             }
             console.log("left pinch");
             simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
           }else{
+            left_hand = false
+            right_hand = true
             if(clicked_mouse_down === false){
               simulateMouseEvent(indexTip.x, indexTip.y)
             }
+          
             console.log("right pinch");
             simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
           }
@@ -215,6 +223,7 @@ function processResults(results) {
         }
         pinch_occurs++
       }else{
+        document.getElementById("dot").style.display = "none"
         if(clicked_mouse_down === true){
           simulateMouseEvent(indexTip.x, indexTip.y, "mouseup")
         }
@@ -247,27 +256,37 @@ function simulateMouseEvent(x, y, type="mousedown") {
   let canceled = !renderer.domElement.dispatchEvent(evt);
 }
 
+let lastMove = [innerWidth / 2, innerHeight / 2];
 let clicked_mouse_down = false
 
 addEventListener("mousedown", (event) => {
-  clicked_mouse_down = true
-  lastMove[0] = event.clientX;
-  lastMove[1] = event.clientY;
-})
+  if(right_hand || left_hand && !both_hands){
+    clicked_mouse_down = true
+    lastMove[0] = event.clientX;
+    lastMove[1] = event.clientY;
+  }else{
+ 
+  }
+}, false)
 
 addEventListener("mouseup", (event) => {
   clicked_mouse_down = false
-})
+}, false)
 
-let lastMove = [innerWidth / 2, innerHeight / 2];
+
+
 addEventListener("mousemove", (event) => {
-  if(clicked_mouse_down){
-    const moveX = ( event.clientX - lastMove[0]);
-    const moveY = ( event.clientY - lastMove[1]);
-    sphere.rotation.y -= ( moveX * .0009);
-    sphere.rotation.x += ( moveY * .0009);
-    sphere.updateMatrix()
+  if(right_hand || left_hand && !both_hands){
+    if(clicked_mouse_down){
+      const moveX = ( event.clientX - lastMove[0]);
+      const moveY = ( event.clientY - lastMove[1]);
+      sphere.rotation.y -= ( moveX * .0009);
+      sphere.rotation.x += ( moveY * .0009);
+      sphere.updateMatrix()
+    }
+    lastMove[0] = event.clientX;
+    lastMove[1] = event.clientY;
+  } else {
+
   }
-  lastMove[0] = event.clientX;
-  lastMove[1] = event.clientY;
-})
+}, false)

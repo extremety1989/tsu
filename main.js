@@ -223,13 +223,7 @@ function processResults(results) {
           document.getElementById("dot").style.display = "block"
             //here Right is left hand...
           if(handednesses[0][0].categoryName === "Right"){
-            // left_hand = true
-            // right_hand = false
-            // if(clicked_mouse_down === false){
-            //   simulateMouseEvent(indexTip.x, indexTip.y)
-            // }
-            // console.log("left pinch");
-            // simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
+            //start tsunami stimulation
           }else{
             left_hand = false
             right_hand = true

@@ -15,9 +15,7 @@ const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.07, 1000)
 camera.position.z = 8
 const renderer = new THREE.WebGLRenderer({antialias: true})
-renderer.setSize(innerWidth, innerHeight)
-renderer.setPixelRatio(window.devicePixelRatio)
-document.body.appendChild(renderer.domElement)
+
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 0.1;
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), 
@@ -30,7 +28,7 @@ const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50),
                                   }
                                 }
                               }))
-scene.add(sphere)
+
 const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), 
                               new THREE.ShaderMaterial({
                                 vertexShader: atmosphereVertexShader,
@@ -39,8 +37,15 @@ const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50),
                                 side: THREE.BackSide
                               }))
 
-atmosphere.scale.set(1.1, 1.1, 1.1)
+window.addEventListener("load", ()=>{
+  renderer.setSize(innerWidth, innerHeight)
+renderer.setPixelRatio(window.devicePixelRatio)
+document.body.appendChild(renderer.domElement)
+  scene.add(sphere)
+  atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
+})
+
 
 
 if (navigator.mediaDevices === undefined) {
@@ -169,22 +174,38 @@ function processResults(results) {
       const thumbTip2 = results.landmarks[1][4];
       const indexTip2 = results.landmarks[1][8];
       document.getElementById("dot").style.display = "none"
+    
+    //both hand pinch
     if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
       if(both_pinch_occurs > 0){
         
         diff = calculateDistance(thumbTip1, thumbTip2) || calculateDistance(indexTip2, indexTip1) 
-        console.log(diff);
-        if(diff > 0.14){
-          console.log("bigger");
-        
-        }else {
-          console.log("smaller");
-        }
+       
         old_diff = diff
         both_pinch_occurs = 0
       }
     
       both_pinch_occurs++
+    //allow to turn the globe(with right hand) even if both hands
+    }else if(calculateDistance(thumbTip1, indexTip1) < 0.07){
+      if(both_pinch_occurs > 0){
+        document.getElementById("dot").style.display = "block"
+        both_hands = false
+        left_hand = false
+        right_hand = true
+        if(clicked_mouse_down === false){
+          simulateMouseEvent(indexTip1.x, indexTip1.y)
+        }
+        console.log("right pinch");
+        simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
+        both_pinch_occurs = 0
+      }
+      both_pinch_occurs++
+    }else{
+      if(clicked_mouse_down === true){
+        document.getElementById("dot").style.display = "none"
+        simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
+      }
     }
 
     }else{
@@ -202,13 +223,13 @@ function processResults(results) {
           document.getElementById("dot").style.display = "block"
             //here Right is left hand...
           if(handednesses[0][0].categoryName === "Right"){
-            left_hand = true
-            right_hand = false
-            if(clicked_mouse_down === false){
-              simulateMouseEvent(indexTip.x, indexTip.y)
-            }
-            console.log("left pinch");
-            simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
+            // left_hand = true
+            // right_hand = false
+            // if(clicked_mouse_down === false){
+            //   simulateMouseEvent(indexTip.x, indexTip.y)
+            // }
+            // console.log("left pinch");
+            // simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
           }else{
             left_hand = false
             right_hand = true

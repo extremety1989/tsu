@@ -164,8 +164,8 @@ function processResults(results) {
     const numHands = results.landmarks.length;
     const handednesses = results.handednesses
     if(numHands === 2){
-      left_hand = false
-      right_hand = false
+      left_hand = true
+      right_hand = true
       both_hands = true
       //right
       const thumbTip1 = results.landmarks[0][4];
@@ -175,40 +175,20 @@ function processResults(results) {
       const indexTip2 = results.landmarks[1][8];
       document.getElementById("dot").style.display = "none"
     
-    //both hand pinch
-    if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
-      if(both_pinch_occurs > 0){
-        
-        diff = calculateDistance(thumbTip1, thumbTip2) || calculateDistance(indexTip2, indexTip1) 
-       
-        old_diff = diff
-        both_pinch_occurs = 0
-      }
-    
-      both_pinch_occurs++
-    //allow to turn the globe(with right hand) even if both hands
-    }else if(calculateDistance(thumbTip1, indexTip1) < 0.07){
-      if(both_pinch_occurs > 0){
-        document.getElementById("dot").style.display = "block"
-        both_hands = false
-        left_hand = false
-        right_hand = true
-        if(clicked_mouse_down === false){
-          simulateMouseEvent(indexTip1.x, indexTip1.y)
+        //both hand pinch
+        if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
+            if(both_pinch_occurs > 0){
+              
+              diff = calculateDistance(thumbTip1, thumbTip2) || calculateDistance(indexTip2, indexTip1) 
+          
+              both_pinch_occurs = 0
+            }
+          
+            both_pinch_occurs++
         }
-        console.log("right pinch");
-        simulateMouseEvent(indexTip1.x, indexTip1.y, "mousemove")
-        both_pinch_occurs = 0
-      }
-      both_pinch_occurs++
-    }else{
-      if(clicked_mouse_down === true){
-        document.getElementById("dot").style.display = "none"
-        simulateMouseEvent(indexTip1.x, indexTip1.y, "mouseup")
-      }
-    }
+        
+      }else{
 
-    }else{
       left_hand = true
       right_hand = true
       both_hands = false
@@ -218,32 +198,35 @@ function processResults(results) {
       const indexTip = results.landmarks[0][8];
 
 
-      if(calculateDistance(thumbTip, indexTip) < 0.07){
-        if(pinch_occurs > 0){
-          document.getElementById("dot").style.display = "block"
-            //here Right is left hand...
-          if(handednesses[0][0].categoryName === "Right"){
-            //start tsunami stimulation
-          }else{
-            left_hand = false
-            right_hand = true
-            if(clicked_mouse_down === false){
-              simulateMouseEvent(indexTip.x, indexTip.y)
+        if(calculateDistance(thumbTip, indexTip) < 0.07){
+            if(pinch_occurs > 0){
+              document.getElementById("dot").style.display = "block"
+                //here Right is left hand...
+              if(handednesses[0][0].categoryName === "Right"){
+                //start tsunami stimulation
+              }else{
+                left_hand = false
+                right_hand = true
+                if(clicked_mouse_down === false){
+                  simulateMouseEvent(indexTip.x, indexTip.y)
+                }
+              
+                console.log("right pinch");
+                simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
+              }
+              pinch_occurs = 0
             }
-          
-            console.log("right pinch");
-            simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
-          }
-          pinch_occurs = 0
-        }
-        pinch_occurs++
-      }else{
-        document.getElementById("dot").style.display = "none"
-        if(clicked_mouse_down === true){
-          simulateMouseEvent(indexTip.x, indexTip.y, "mouseup")
+            pinch_occurs++
+        }else{
+            if(document.getElementById("dot").style.display === "block"){
+              document.getElementById("dot").style.display = "none"
+            }
+            if(clicked_mouse_down === true){
+              simulateMouseEvent(indexTip.x, indexTip.y, "mouseup")
+            }
         }
       }
-    }
+
   }
 }
 
@@ -275,7 +258,7 @@ let lastMove = [innerWidth / 2, innerHeight / 2];
 let clicked_mouse_down = false
 
 addEventListener("mousedown", (event) => {
-  if(right_hand || left_hand && !both_hands){
+  if(right_hand || left_hand){
     clicked_mouse_down = true
     lastMove[0] = event.clientX;
     lastMove[1] = event.clientY;
@@ -291,7 +274,7 @@ addEventListener("mouseup", (event) => {
 
 
 addEventListener("mousemove", (event) => {
-  if(right_hand || left_hand && !both_hands){
+  if(right_hand || left_hand){
     if(clicked_mouse_down){
       const moveX = ( event.clientX - lastMove[0]);
       const moveY = ( event.clientY - lastMove[1]);

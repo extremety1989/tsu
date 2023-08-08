@@ -14,7 +14,7 @@ const video = document.getElementById("video");
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.07, 1000)
 camera.position.z = 8
-const renderer = new THREE.WebGLRenderer({antialias: true})
+const renderer = new THREE.WebGLRenderer({antialias: true, canvas: document.getElementById("canvas")})
 
 const raycaster = new THREE.Raycaster();
 raycaster.params.Points.threshold = 0.1;
@@ -40,13 +40,17 @@ const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50),
 window.addEventListener("load", ()=>{
   renderer.setSize(innerWidth, innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
-document.body.appendChild(renderer.domElement)
+camera.lookAt(scene.position);
   scene.add(sphere)
   atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
 })
 
-
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}, false);
 
 if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
@@ -203,7 +207,14 @@ function processResults(results) {
               document.getElementById("dot").style.display = "block"
                 //here Right is left hand...
               if(handednesses[0][0].categoryName === "Right"){
-                //start tsunami stimulation
+                left_hand = true
+                right_hand = false
+                if(clicked_mouse_down === false){
+                  simulateMouseEvent(indexTip.x, indexTip.y)
+                }
+              
+                console.log("left pinch");
+                simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
               }else{
                 left_hand = false
                 right_hand = true
@@ -255,15 +266,16 @@ function simulateMouseEvent(x, y, type="mousedown") {
 }
 
 let lastMove = [innerWidth / 2, innerHeight / 2];
+
 let clicked_mouse_down = false
 
 addEventListener("mousedown", (event) => {
-  if(right_hand || left_hand){
+  if(right_hand){
     clicked_mouse_down = true
     lastMove[0] = event.clientX;
     lastMove[1] = event.clientY;
-  }else{
- 
+  }else if(left_hand){
+    clicked_mouse_down = true
   }
 }, false)
 
@@ -274,17 +286,23 @@ addEventListener("mouseup", (event) => {
 
 
 addEventListener("mousemove", (event) => {
-  if(right_hand || left_hand){
+  if(right_hand){
     if(clicked_mouse_down){
       const moveX = ( event.clientX - lastMove[0]);
       const moveY = ( event.clientY - lastMove[1]);
+      
       sphere.rotation.y -= ( moveX * .0009);
       sphere.rotation.x += ( moveY * .0009);
       sphere.updateMatrix()
     }
     lastMove[0] = event.clientX;
     lastMove[1] = event.clientY;
-  } else {
+
+  } else if(left_hand){
+
+    if(clicked_mouse_down){
+       //animate tsunami ?
+    }
 
   }
 }, false)

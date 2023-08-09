@@ -177,7 +177,7 @@ function processResults(results) {
       //left
       const thumbTip2 = results.landmarks[1][4];
       const indexTip2 = results.landmarks[1][8];
-      document.getElementById("dot").style.display = "none"
+      document.getElementById("dot").style.opacity = 0
     
         //both hand pinch
         if(calculateDistance(thumbTip1, indexTip1) < 0.07 && calculateDistance(thumbTip2, indexTip2) < 0.07){
@@ -204,7 +204,7 @@ function processResults(results) {
 
         if(calculateDistance(thumbTip, indexTip) < 0.07){
             if(pinch_occurs > 0){
-              document.getElementById("dot").style.display = "block"
+              document.getElementById("dot").style.opacity = 100
                 //here Right is left hand...
               if(handednesses[0][0].categoryName === "Right"){
                 left_hand = true
@@ -213,7 +213,7 @@ function processResults(results) {
                   simulateMouseEvent(indexTip.x, indexTip.y)
                 }
               
-                console.log("left pinch");
+              //  console.log("left pinch");
                 simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
               }else{
                 left_hand = false
@@ -222,22 +222,22 @@ function processResults(results) {
                   simulateMouseEvent(indexTip.x, indexTip.y)
                 }
               
-                console.log("right pinch");
+            //    console.log("right pinch");
                 simulateMouseEvent(indexTip.x, indexTip.y, "mousemove")
               }
               pinch_occurs = 0
             }
             pinch_occurs++
         }else{
-            if(document.getElementById("dot").style.display === "block"){
-              document.getElementById("dot").style.display = "none"
+       
+            if(document.getElementById("dot").style.opacity === "100"){
+              document.getElementById("dot").style.opacity = 0
             }
             if(clicked_mouse_down === true){
               simulateMouseEvent(indexTip.x, indexTip.y, "mouseup")
             }
         }
       }
-
   }
 }
 
@@ -266,25 +266,36 @@ function simulateMouseEvent(x, y, type="mousedown") {
 }
 
 let lastMove = [innerWidth / 2, innerHeight / 2];
+let lastPosition = [innerWidth / 2, innerHeight / 2];
 
 let clicked_mouse_down = false
 
 addEventListener("mousedown", (event) => {
   if(right_hand){
-    clicked_mouse_down = true
+    if(!clicked_mouse_down){
+      clicked_mouse_down = true
+    }
     lastMove[0] = event.clientX;
     lastMove[1] = event.clientY;
   }else if(left_hand){
-    clicked_mouse_down = true
+    if(!clicked_mouse_down){
+      document.getElementById("dot2").style.opacity = 100
+      clicked_mouse_down = true
+    }
   }
 }, false)
 
 addEventListener("mouseup", (event) => {
-  clicked_mouse_down = false
+  if(clicked_mouse_down){
+    document.getElementById("dot2").style.opacity = 0
+    clicked_mouse_down = false
+  }
+
 }, false)
 
 
-
+let posX = 0
+let posY = 0
 addEventListener("mousemove", (event) => {
   if(right_hand){
     if(clicked_mouse_down){
@@ -302,7 +313,15 @@ addEventListener("mousemove", (event) => {
 
     if(clicked_mouse_down){
        //animate tsunami ?
+       
+       const newX = ( event.clientX - 10 );
+       const newY = ( event.clientY - 10 );
+       posX += 0.01
+      
+       document.getElementById("dot2").style = "transform:translate3d("+newX+"px,"+newY+"px,0px);"
     }
+    lastPosition[0] = event.clientX;
+    lastPosition[1] = event.clientY;
 
   }
 }, false)
